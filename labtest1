@@ -1,0 +1,53 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import butter, lfilter
+
+np.random.seed(42)
+heart_rate_data = np.random.normal(70, 5, 1440) + 10 * np.sin(np.linspace(0, 2 * np.pi, 1440))
+
+def butter_lowpass_filter(data, cutoff, fs, order):
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    b, a = butter(order, normal_cutoff, btype='lowpass')
+    y = lfilter(b, a, data)
+    return y
+
+fs = 60  
+cutoff = 10 
+order = 3  
+smoothed_data = butter_lowpass_filter(heart_rate_data, cutoff, fs, order)
+
+def calculate_hourly_averages(data):
+    num_hours = 24
+    num_samples_per_hour = 60
+    averages = np.zeros(num_hours)
+    for i in range(num_hours):
+        start_index = i * num_samples_per_hour
+        end_index = (i + 1) * num_samples_per_hour
+        averages[i] = np.mean(data[start_index:end_index])
+    return averages
+hourly_averages = calculate_hourly_averages(smoothed_data)
+
+plt.figure(figsize=(12, 6))
+plt.plot(heart_rate_data, label='Original Data')
+plt.plot(smoothed_data, label='Smoothed Data')
+plt.scatter(np.arange(0, 1440, 60), hourly_averages, color='red', label='Hourly Averages')
+
+def identify_elevated_periods(data, threshold, consecutive_minutes):
+    elevated_periods = []
+    current_period = None
+    for i, hr in enumerate(data):
+        if hr > threshold:
+            if current_period is None:
+                current_period = [i]
+        else:
+            if current_period is not None and i - current_period[0] >= consecutive_minutes:
+                elevated_periods.append(current_period)
+            current_period = None
+    return elevated_periods
+
+
+
+plt.plot(figsize=(12,6))
+plt.plot(heart_rate_data,label='heart rate exceeds 100')
+plt.scatter(np.arange(0,1440,0),(heart_rate_data>100),)
